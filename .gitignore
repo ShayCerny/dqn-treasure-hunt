@@ -19,7 +19,8 @@ data/mazes/*.json
 models/*.h5
 models/*.weights.h5
 
-# Jupyter checkpoints
+# Jupyter notebooks
+*.ipynb
 .ipynb_checkpoints/
 
 # OS/editor cruft
