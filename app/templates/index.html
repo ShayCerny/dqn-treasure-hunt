@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Home — DQN Treasure Hunt{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <h2 class="page-heading">Welcome</h2>
+    <p class="text-muted">
+      Build a maze, configure the DQN agent, and watch it learn in real time.
+    </p>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card text-center h-100">
+      <div class="card-body d-flex flex-column justify-content-center">
+        <h5 class="card-title">1. Build a Maze</h5>
+        <p class="card-text text-muted">Design a custom grid or use the default 8×8 maze.</p>
+        <a href="/mazes" class="btn btn-primary mt-auto">Open Maze Builder</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card text-center h-100">
+      <div class="card-body d-flex flex-column justify-content-center">
+        <h5 class="card-title">2. Train the Agent</h5>
+        <p class="card-text text-muted">Set hyperparameters and watch the DQN train live.</p>
+        <a href="/train" class="btn btn-success mt-auto">Start Training</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card text-center h-100">
+      <div class="card-body d-flex flex-column justify-content-center">
+        <h5 class="card-title">3. Review Results</h5>
+        <p class="card-text text-muted">Browse completed training runs and epoch metrics.</p>
+        <a href="/runs" class="btn btn-secondary mt-auto">View Run History</a>
+      </div>
+    </div>
+  </div>
+
+  {% if runs %}
+  <div class="col-12">
+    <h4 class="mt-2">Recent Runs</h4>
+    <table class="table table-hover table-striped table-sm align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Run ID</th><th>Maze</th><th>Status</th>
+          <th>Epochs</th><th>Win Rate</th><th>Started</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in runs %}
+        <tr>
+          <td><code>{{ r.id }}</code></td>
+          <td>{{ r.get('maze_name', r.maze_id) }}</td>
+          <td><span class="status-{{ r.status }}">{{ r.status }}</span></td>
+          <td>{{ r.get('epochs_run', '—') }}</td>
+          <td>{{ '%.1f%%' % (r.final_win_rate * 100) if r.final_win_rate else '—' }}</td>
+          <td>{{ r.created_at[:19] }}</td>
+          <td>
+            {% if r.get('has_weights') %}
+            <button class="btn btn-sm btn-outline-info" onclick="openPlayback('{{ r.id }}')">Watch</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

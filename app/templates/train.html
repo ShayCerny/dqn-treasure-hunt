@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}{% if watch_run %}Run {{ watch_run.id }} — {% endif %}Train — DQN Treasure Hunt{% endblock %}
+
+{% block content %}
+<h2 class="page-heading">
+  {% if watch_run %}
+    Watching Run <code class="fs-5">{{ watch_run.id }}</code>
+  {% else %}
+    Train the Agent
+  {% endif %}
+</h2>
+
+<div class="row g-4">
+
+  {% if not watch_run %}
+  <!-- Config panel: full width, collapses once training starts -->
+  <div class="col-12">
+    <div class="collapse show" id="config-panel">
+      <div class="card">
+        <div class="card-header fw-semibold">Configuration</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Maze</label>
+            <select id="maze-select" class="form-select">
+              <option value="">— select a maze —</option>
+              {% for m in mazes %}
+              <option value="{{ m.id }}">{{ m.name }} ({{ m.rows }}×{{ m.cols }})</option>
+              {% endfor %}
+            </select>
+            {% if not mazes %}
+            <div class="form-text text-danger">
+              No mazes saved yet. <a href="/mazes">Build one first.</a>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="row g-2">
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="n_epoch">
+                Epochs
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Total number of training cycles to run.">&#9432;</span>
+              </label>
+              <input type="number" id="n_epoch" class="form-control form-control-sm"
+                     value="{{ defaults.n_epoch }}" step="1" min="1" max="50000">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="batch_size">
+                Batch Size
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Number of past experiences sampled from memory per training step.">&#9432;</span>
+              </label>
+              <input type="number" id="batch_size" class="form-control form-control-sm"
+                     value="{{ defaults.batch_size }}" step="1" min="1">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="max_memory">
+                Replay Memory
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Maximum number of past experiences stored for random replay sampling.">&#9432;</span>
+              </label>
+              <input type="number" id="max_memory" class="form-control form-control-sm"
+                     value="{{ defaults.max_memory }}" step="1" min="1">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="learning_rate">
+                Learning Rate
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Controls how fast the network adjusts its weights each step.">&#9432;</span>
+              </label>
+              <input type="number" id="learning_rate" class="form-control form-control-sm"
+                     value="{{ defaults.learning_rate }}" step="0.0001" min="0.00001" max="1">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="hidden_layer_size">
+                Hidden Layer Size
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Number of neurons per hidden layer.">&#9432;</span>
+              </label>
+              <input type="number" id="hidden_layer_size" class="form-control form-control-sm"
+                     value="{{ defaults.hidden_layer_size }}" step="1" min="4" max="1024">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="epsilon">
+                Epsilon Start
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Initial exploration rate. 1.0 = fully random actions.">&#9432;</span>
+              </label>
+              <input type="number" id="epsilon" class="form-control form-control-sm"
+                     value="{{ defaults.epsilon }}" step="0.01" min="0.01" max="1">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="epsilon_min">
+                Epsilon Min
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Minimum exploration rate.">&#9432;</span>
+              </label>
+              <input type="number" id="epsilon_min" class="form-control form-control-sm"
+                     value="{{ defaults.epsilon_min }}" step="0.001" min="0.001">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="epsilon_decay">
+                Epsilon Decay
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Multiplier applied to epsilon each epoch.">&#9432;</span>
+              </label>
+              <input type="number" id="epsilon_decay" class="form-control form-control-sm"
+                     value="{{ defaults.epsilon_decay }}" step="0.001" min="0.001" max="0.999">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="patience">
+                Patience
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Consecutive epochs at 100% win rate required before early stop.">&#9432;</span>
+              </label>
+              <input type="number" id="patience" class="form-control form-control-sm"
+                     value="{{ defaults.patience }}" step="1" min="1">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="loss_min_delta">
+                Early Stop Loss Delta
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Minimum relative loss improvement over the patience window before early stop triggers. Lower = stricter convergence check.">&#9432;</span>
+              </label>
+              <input type="number" id="loss_min_delta" class="form-control form-control-sm"
+                     value="{{ defaults.loss_min_delta }}" step="0.01" min="0.001" max="0.999">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="alpha">
+                PER Priority Exponent (α)
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Controls how strongly transitions are prioritized by TD error. 0 = uniform sampling, 1 = fully prioritized.">&#9432;</span>
+              </label>
+              <input type="number" id="alpha" class="form-control form-control-sm"
+                     value="{{ defaults.alpha }}" step="0.05" min="0.0" max="1.0">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="beta_start">
+                IS Correction Start (β)
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="Starting value for importance-sampling correction, annealed to 1.0 over training. Corrects bias from prioritized sampling.">&#9432;</span>
+              </label>
+              <input type="number" id="beta_start" class="form-control form-control-sm"
+                     value="{{ defaults.beta_start }}" step="0.05" min="0.0" max="1.0">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="target_update_freq">
+                Target Update Freq
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="How often (in epochs) the target network syncs weights.">&#9432;</span>
+              </label>
+              <input type="number" id="target_update_freq" class="form-control form-control-sm"
+                     value="{{ defaults.target_update_freq }}" step="1" min="1">
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <label class="form-label small mb-1" for="discount">
+                Discount Factor
+                <span class="text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="How much future rewards are valued vs. immediate ones.">&#9432;</span>
+              </label>
+              <input type="number" id="discount" class="form-control form-control-sm"
+                     value="{{ defaults.discount }}" step="0.01" min="0.01" max="1">
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <a href="/help" class="text-muted small">Learn more about these settings &#8599;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Watch mode: run details sidebar -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header fw-semibold">Run Details</div>
+      <div class="card-body">
+        <p class="mb-2"><strong>Maze:</strong> {{ watch_run.get('maze_name', watch_run.maze_id) }}</p>
+        <p class="mb-2">
+          <strong>Status:</strong>
+          <span class="status-{{ watch_run.status }}">{{ watch_run.status }}</span>
+        </p>
+        {% if watch_run.get('epochs_run') %}
+        <p class="mb-2">
+          <strong>Epochs:</strong>
+          {{ watch_run.epochs_run }} / {{ watch_run.config.n_epoch }}
+        </p>
+        {% endif %}
+        {% if watch_run.get('final_win_rate') is not none %}
+        <p class="mb-2">
+          <strong>Final Win Rate:</strong>
+          {{ '%.1f%%' % (watch_run.final_win_rate * 100) }}
+        </p>
+        {% endif %}
+        {% if watch_run.status == 'complete' and watch_run.get('completion_check') is not none %}
+        <p class="mb-2">
+          <strong>Completion Check:</strong>
+          {% if watch_run.completion_check %}
+            <span class="text-success fw-semibold">Passed</span>
+          {% else %}
+            <span class="text-danger fw-semibold">Failed</span>
+          {% endif %}
+        </p>
+        {% endif %}
+        {% if watch_run.get('stop_reason') %}
+        <p class="mb-2"><strong>Stop Reason:</strong> {{ watch_run.stop_reason }}</p>
+        {% endif %}
+        {% if watch_run.get('elapsed_seconds') %}
+        <p class="mb-2">
+          <strong>Training Time:</strong>
+          {% set total = watch_run.elapsed_seconds | int %}
+          {% set m = total // 60 %}{% set s = total % 60 %}
+          {{ m }}m {{ '%02d' % s }}s
+        </p>
+        {% endif %}
+        <div id="run-highlights"></div>
+        <hr>
+        <div class="d-flex flex-column gap-2">
+          {% if watch_run.get('has_weights') %}
+          <button class="btn btn-info btn-sm"
+                  onclick="openPlayback('{{ watch_run.id }}')">Watch Playback</button>
+          {% endif %}
+          <a href="/runs" class="btn btn-outline-secondary btn-sm">Back to Runs</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Live dashboard (both modes) -->
+  <div class="{% if watch_run %}col-lg-8{% else %}col-12{% endif %}">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">Live Dashboard</h5>
+      <span id="epoch-counter" class="badge bg-secondary">Epoch: —</span>
+    </div>
+
+    <div class="progress mb-2" style="height:22px;">
+      <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated
+           bg-success" style="width:0%">0%</div>
+    </div>
+
+    <div class="d-flex align-items-start gap-2 mb-3">
+      {% if not watch_run %}
+      <button id="start-btn" class="btn btn-success flex-shrink-0"
+              onclick="startTraining()">Start Training</button>
+      {% elif watch_run.status == 'running' %}
+      <button id="start-btn" class="btn btn-danger flex-shrink-0"
+              onclick="cancelTraining()">Cancel Training</button>
+      {% endif %}
+      <div id="training-status" class="flex-grow-1 small"></div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="card"><div class="card-body p-2">
+          <div class="card-subtitle text-muted small mb-1">Loss</div>
+          <div class="chart-wrapper"><canvas id="loss-chart"></canvas></div>
+        </div></div>
+      </div>
+      <div class="col-md-6">
+        <div class="card"><div class="card-body p-2">
+          <div class="card-subtitle text-muted small mb-1">Win Rate</div>
+          <div class="chart-wrapper"><canvas id="win-chart"></canvas></div>
+        </div></div>
+      </div>
+      <div class="col-md-6">
+        <div class="card"><div class="card-body p-2">
+          <div class="card-subtitle text-muted small mb-1">Epsilon</div>
+          <div class="chart-wrapper"><canvas id="epsilon-chart"></canvas></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  {% if watch_run %}
+  <!-- Training configuration used for this run -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header fw-semibold">Training Configuration</div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% set cfg = watch_run.config %}
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Epochs</div>
+            <div class="fw-semibold">{{ cfg.n_epoch }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Batch Size</div>
+            <div class="fw-semibold">{{ cfg.batch_size }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Replay Memory</div>
+            <div class="fw-semibold">{{ cfg.max_memory }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Learning Rate</div>
+            <div class="fw-semibold">{{ cfg.learning_rate }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Hidden Layer Size</div>
+            <div class="fw-semibold">{{ cfg.hidden_layer_size }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Epsilon Start</div>
+            <div class="fw-semibold">{{ cfg.epsilon }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Epsilon Min</div>
+            <div class="fw-semibold">{{ cfg.epsilon_min }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Epsilon Decay</div>
+            <div class="fw-semibold">{{ cfg.epsilon_decay }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Patience</div>
+            <div class="fw-semibold">{{ cfg.patience }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Loss Delta</div>
+            <div class="fw-semibold">{{ cfg.loss_min_delta }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">PER Alpha (α)</div>
+            <div class="fw-semibold">{{ cfg.alpha }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">IS Beta Start (β)</div>
+            <div class="fw-semibold">{{ cfg.beta_start }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Target Update Freq</div>
+            <div class="fw-semibold">{{ cfg.target_update_freq }}</div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="small text-muted">Discount Factor</div>
+            <div class="fw-semibold">{{ cfg.discount }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Epoch log table (populated by JS for completed runs) -->
+  <div class="col-12" id="epoch-log-section" style="display:none;">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+        <span>Epoch Log</span>
+        <span id="epoch-log-range" class="text-muted small fw-normal"></span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Epoch</th>
+              <th>Loss</th>
+              <th>Win Rate</th>
+              <th>Epsilon</th>
+              <th>Episodes</th>
+            </tr>
+          </thead>
+          <tbody id="epoch-log-body"></tbody>
+        </table>
+      </div>
+      <div class="card-footer d-flex justify-content-between align-items-center py-2">
+        <button class="btn btn-sm btn-outline-secondary" id="epoch-log-prev"
+                onclick="epochLogPage(-1)">&#8592; Prev</button>
+        <span class="small text-muted" id="epoch-log-page-info"></span>
+        <button class="btn btn-sm btn-outline-secondary" id="epoch-log-next"
+                onclick="epochLogPage(1)">Next &#8594;</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% if watch_run %}
+<script>
+  const WATCH_RUN_ID = "{{ watch_run.id }}";
+  const WATCH_RUN_STATUS = "{{ watch_run.status }}";
+</script>
+{% endif %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+  });
+</script>
+{% endblock %}

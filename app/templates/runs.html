@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Run History — DQN Treasure Hunt{% endblock %}
+
+{% block content %}
+<h2 class="page-heading">Run History</h2>
+
+{% if not runs %}
+<div class="card p-4 text-center text-muted">
+  No training runs yet. <a href="/train">Start one.</a>
+</div>
+{% else %}
+<table class="table table-hover table-striped align-middle">
+  <thead class="table-dark">
+    <tr>
+      <th>Run ID</th><th>Maze</th><th>Status</th>
+      <th>Epochs</th><th>Win Rate</th>
+      <th>Completion Check</th><th>Started</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in runs %}
+    <tr style="cursor:pointer" onclick="window.location='/train/{{ r.id }}'">
+      <td><code>{{ r.id }}</code></td>
+      <td>{{ r.get('maze_name', r.maze_id) }}</td>
+      <td><span class="status-{{ r.status }}">{{ r.status }}</span></td>
+      <td>{{ r.get('epochs_run', r.epochs | length) }}</td>
+      <td>{{ '%.1f%%' % (r.final_win_rate * 100) if r.final_win_rate else '—' }}</td>
+      <td>
+        {% if r.status == 'complete' %}
+          {% if r.completion_check %}
+            <span class="text-success fw-semibold">Passed</span>
+          {% else %}
+            <span class="text-danger fw-semibold">Failed</span>
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ r.created_at[:19] }}</td>
+      <td>
+        {% if r.get('has_weights') %}
+        <button class="btn btn-sm btn-outline-info"
+                onclick="event.stopPropagation(); openPlayback('{{ r.id }}')">Watch</button>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

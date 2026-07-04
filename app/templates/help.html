@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Help — DQN Treasure Hunt{% endblock %}
+
+{% block content %}
+<h2 class="page-heading">Help &amp; Configuration Guide</h2>
+
+<div class="row g-4">
+
+  <!-- How it works -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header fw-semibold">How It Works</div>
+      <div class="card-body">
+        <p>
+          This app trains a <strong>Deep Q-Network (DQN)</strong> agent to navigate a maze and find
+          hidden treasure. The agent learns entirely through trial and error — it starts by making
+          random moves and gradually figures out which actions lead to the reward.
+        </p>
+        <h6 class="mt-3">The training loop</h6>
+        <ol>
+          <li><strong>Explore:</strong> The agent picks a random starting cell and moves through the maze,
+              choosing actions randomly (exploration) or based on its current knowledge (exploitation).</li>
+          <li><strong>Remember:</strong> Each move — the state before, action taken, reward received,
+              and resulting state — is stored in a <em>replay memory buffer</em>.</li>
+          <li><strong>Learn:</strong> A prioritized batch of past experiences is sampled from memory
+              — transitions the network currently finds surprising are replayed more often.
+              The network's weights are updated to better predict which actions lead to higher rewards.</li>
+          <li><strong>Repeat:</strong> This continues for every epoch. The agent's behavior improves
+              as its Q-values (estimated action values) become more accurate.</li>
+        </ol>
+        <h6 class="mt-3">Algorithm improvements</h6>
+        <p>
+          <strong>Double DQN</strong> reduces a well-known overestimation bias in standard DQN.
+          Vanilla DQN uses the same (target) network to both select the best next action and
+          estimate its value, which inflates Q-values over time. Double DQN decouples these roles:
+          the <em>main</em> network selects the best action, and the <em>target</em> network
+          evaluates it. This small change produces more accurate value estimates and a more stable policy.
+        </p>
+        <p>
+          <strong>Prioritized Experience Replay (PER)</strong> replaces uniform random sampling
+          with sampling proportional to each transition's TD error — the gap between the predicted
+          and target Q-value. Transitions the network found surprising are replayed more often,
+          leading to faster convergence. A sum-tree data structure keeps sampling efficient (O(log n)).
+          Importance-sampling (IS) weights correct the bias introduced by non-uniform sampling,
+          with the correction annealed from &beta;<sub>start</sub> to 1.0 over the course of training.
+        </p>
+        <p>
+          At the end of training you can watch a replay of the agent navigating the maze with the
+          weights it learned.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuration reference -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header fw-semibold">Configuration Reference</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th style="width:200px">Setting</th><th>Description</th><th>Guidance</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Epochs</strong></td>
+              <td>Total number of training cycles. Each epoch the agent plays one full game and updates
+                  the network.</td>
+              <td>Start with 500–1000. Increase if the agent hasn't converged by the end.</td>
+            </tr>
+            <tr>
+              <td><strong>Batch Size</strong></td>
+              <td>Number of past experiences randomly sampled from memory and used for one network
+                  update step.</td>
+              <td>32 is a solid default. Larger batches are more stable but slower per step.</td>
+            </tr>
+            <tr>
+              <td><strong>Replay Memory</strong></td>
+              <td>Maximum number of past (state, action, reward, next state) tuples stored. Older
+                  entries are discarded when full.</td>
+              <td>512–1000 works well for small mazes. Larger mazes may benefit from more memory.</td>
+            </tr>
+            <tr>
+              <td><strong>Learning Rate</strong></td>
+              <td>Controls how much the network weights shift after each batch update. Higher = faster
+                  learning but more instability.</td>
+              <td>0.001 is the standard Adam default. Try 0.0005 if training is erratic.</td>
+            </tr>
+            <tr>
+              <td><strong>Hidden Layer Size</strong></td>
+              <td>Number of neurons in each of the two hidden layers of the Q-network. More neurons
+                  = more capacity to learn complex patterns.</td>
+              <td>64 matches the default 8×8 maze size. Larger mazes may benefit from 128 or more.</td>
+            </tr>
+            <tr>
+              <td><strong>Epsilon Start</strong></td>
+              <td>The agent's initial exploration rate. At 1.0 the agent acts completely randomly,
+                  ignoring its Q-values entirely.</td>
+              <td>Always start at or near 1.0 so the agent builds a diverse memory before exploiting.</td>
+            </tr>
+            <tr>
+              <td><strong>Epsilon Min</strong></td>
+              <td>The floor for the exploration rate. Even a fully trained agent will make a small
+                  percentage of random moves.</td>
+              <td>0.05 (5%) is a common choice. Lower values let the agent exploit more aggressively
+                  late in training.</td>
+            </tr>
+            <tr>
+              <td><strong>Epsilon Decay</strong></td>
+              <td>Multiplicative factor applied to epsilon each epoch. Epsilon shrinks from its
+                  starting value toward Epsilon Min over time.</td>
+              <td>0.995 decays slowly over ~1000 epochs. Use 0.99 for faster decay with fewer epochs.</td>
+            </tr>
+            <tr>
+              <td><strong>Patience</strong></td>
+              <td>Number of consecutive epochs where the win rate must stay at 100% before training
+                  stops automatically (early stopping).</td>
+              <td>10 is a good default. Raise it if you want more confidence in convergence.</td>
+            </tr>
+            <tr>
+              <td><strong>Early Stop Loss Delta</strong></td>
+              <td>Minimum relative improvement in loss over the patience window required before early
+                  stopping can trigger. Measured as (max &minus; min) / max within the window.</td>
+              <td>0.1 works well in most cases. Lower values demand tighter convergence before stopping.</td>
+            </tr>
+            <tr>
+              <td><strong>PER Priority Exponent (&alpha;)</strong></td>
+              <td>Controls how strongly transitions are prioritized by their TD error.
+                  &alpha; = 0 gives uniform sampling (standard experience replay);
+                  &alpha; = 1 gives fully proportional prioritization.</td>
+              <td>0.6 is the value from the original PER paper and works well in practice.</td>
+            </tr>
+            <tr>
+              <td><strong>IS Correction Start (&beta;)</strong></td>
+              <td>Starting value for importance-sampling weights that correct the bias introduced by
+                  prioritized sampling. Annealed to 1.0 over the course of training.</td>
+              <td>0.4 is the standard starting value. Higher values correct bias more aggressively early on.</td>
+            </tr>
+            <tr>
+              <td><strong>Target Update Freq</strong></td>
+              <td>How many epochs between copying the main network's weights into the slower-moving
+                  target network used for computing Q-targets.</td>
+              <td>50 is stable for most configurations. Lower values track changes faster but can
+                  destabilise training.</td>
+            </tr>
+            <tr>
+              <td><strong>Discount Factor</strong></td>
+              <td>How much the agent values future rewards compared to immediate ones. 0.95 means
+                  a reward 10 steps away is worth 0.95<sup>10</sup> ≈ 60% of an immediate reward.</td>
+              <td>0.9–0.99 works well for most maze sizes. Higher values encourage longer-term planning.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick tips -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header fw-semibold">Quick Tips</div>
+      <div class="card-body">
+        <ul class="mb-0">
+          <li>If the <strong>win rate stays at 0%</strong> for hundreds of epochs, try increasing the number
+              of epochs or slowing epsilon decay so the agent explores longer.</li>
+          <li>If training is <strong>unstable</strong> (loss oscillates wildly), lower the learning rate
+              or increase the replay memory size.</li>
+          <li>The <strong>Completion Check</strong> on the Run History page re-runs the agent from every
+              free cell in the maze — it passes only if the agent wins from all positions.</li>
+          <li>Larger mazes generally need more epochs, a larger replay memory, and possibly a larger
+              hidden layer size.</li>
+          <li>You can <strong>cancel training</strong> at any time and still watch a replay — the weights
+              at the point of cancellation are saved.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

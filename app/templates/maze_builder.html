@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Maze Builder — DQN Treasure Hunt{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <h2 class="page-heading">Maze Builder</h2>
+    <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+      <span class="text-muted small me-1">Mode:</span>
+      <div class="btn-group btn-group-sm" role="group">
+        <button class="btn btn-outline-secondary mode-btn active" data-mode="wall"
+                onclick="setMode('wall')">Wall</button>
+        <button class="btn btn-outline-primary mode-btn" data-mode="start"
+                onclick="setMode('start')">
+          <span class="badge bg-primary">Start</span>
+        </button>
+        <button class="btn btn-outline-warning mode-btn" data-mode="treasure"
+                onclick="setMode('treasure')">
+          <span class="badge bg-warning text-dark">Treasure</span>
+        </button>
+      </div>
+      <span class="text-muted small">— click a cell to apply</span>
+    </div>
+
+    <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+      <span class="text-muted small">Size:</span>
+      <input type="number" id="maze-rows" class="form-control form-control-sm" style="width:70px"
+             value="8" min="4" max="32" title="Rows">
+      <span class="text-muted small">×</span>
+      <input type="number" id="maze-cols" class="form-control form-control-sm" style="width:70px"
+             value="8" min="4" max="32" title="Cols">
+      <button class="btn btn-sm btn-outline-secondary" onclick="applySize()">Apply</button>
+      <span class="text-muted small fst-italic">resets to blank grid</span>
+    </div>
+
+    <div id="maze-grid"></div>
+
+    <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+      <input type="text" id="maze-name" class="form-control" style="max-width:200px"
+             placeholder="Maze name" value="Default 8x8">
+      <button class="btn btn-primary" onclick="saveMaze()">Save Maze</button>
+      <span id="save-status" class="small"></span>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <h5>Saved Mazes</h5>
+    <ul id="saved-mazes-list" class="list-group"></ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/maze-builder.js') }}"></script>
+<script>
+  initGrid({{ default_maze | tojson }});
+</script>
+{% endblock %}

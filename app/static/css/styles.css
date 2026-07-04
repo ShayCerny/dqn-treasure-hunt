@@ -1,0 +1,94 @@
+body {
+  background: #f0f2f5;
+  font-size: 0.95rem;
+}
+
+/* Container breathing room */
+.container { padding-bottom: 3rem; }
+
+/* Page headings */
+.page-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 3px solid #0d6efd;
+  display: inline-block;
+}
+
+/* Cards */
+.card {
+  box-shadow: 0 2px 8px rgba(0,0,0,.07);
+  border: 1px solid #e0e4ea;
+}
+.card-header {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e4ea;
+}
+
+/* Maze grid */
+#maze-grid {
+  display: grid;
+  gap: 2px;
+  width: fit-content;
+  margin: 1rem auto;
+}
+
+.maze-cell {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.maze-cell.free    { background: #ffffff; border: 1px solid #dee2e6; }
+.maze-cell.wall    { background: #212529; }
+.maze-cell.start   { background: #0d6efd; }
+.maze-cell.target  { background: #ffc107; }
+.maze-cell.free:hover  { background: #e9ecef; }
+.maze-cell.wall:hover  { background: #495057; }
+
+/* Charts */
+.chart-wrapper {
+  position: relative;
+  height: 180px;
+  width: 100%;
+}
+
+/* Progress bar */
+#progress-bar {
+  transition: width 0.3s ease;
+  min-width: 2em;
+}
+
+/* Status badges */
+.status-complete  { color: #fff; background: #198754; padding: 2px 8px; border-radius: 12px; font-size: .8rem; font-weight: 600; }
+.status-running   { color: #fff; background: #0d6efd; padding: 2px 8px; border-radius: 12px; font-size: .8rem; }
+.status-error     { color: #fff; background: #dc3545; padding: 2px 8px; border-radius: 12px; font-size: .8rem; }
+.status-pending   { color: #fff; background: #6c757d; padding: 2px 8px; border-radius: 12px; font-size: .8rem; }
+.status-cancelled { color: #212529; background: #fd7e14; padding: 2px 8px; border-radius: 12px; font-size: .8rem; }
+
+/* Training status box */
+#training-status {
+  background: #f8f9fa;
+  border-left: 4px solid #0d6efd;
+  border-radius: 4px;
+  padding: .5rem .75rem;
+  min-height: 2.5rem;
+  color: #495057;
+}
+
+/* Tables */
+.table > thead { font-size: .85rem; letter-spacing: .03em; }
+.table > tbody > tr:hover { background: #f0f4ff; }
+
+/* Navbar active link */
+.navbar-nav .nav-link.active {
+  color: #fff !important;
+  font-weight: 600;
+  border-bottom: 2px solid #0d6efd;
+}
+
+/* Mode button group in maze builder */
+.mode-btn.active { font-weight: 600; }

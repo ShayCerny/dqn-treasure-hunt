@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+instance/
+models/*.h5
+models/*.weights.h5
+.git/
+.pytest_cache/
+.ipynb_checkpoints/
+*.ipynb
