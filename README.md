@@ -2,7 +2,7 @@
 
 A web application for training and visualizing a Deep Q-Network (DQN) agent solving custom maze environments in real time.
 
-**[Live Demo](#)** — build a maze, train an agent, and watch it learn in your browser.
+**[Live Demo](https://shaycerny-dqn-treasure-hunt.hf.space)** — build a maze, train an agent, and watch it learn in your browser.
 
 > The hosted demo runs on a free-tier container with an ephemeral filesystem: mazes, trained models, and run history reset if the instance restarts or sleeps from inactivity. Run it locally (below) for persistent storage.
 
